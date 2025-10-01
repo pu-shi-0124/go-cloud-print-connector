@@ -46,6 +46,7 @@ var (
 	startDocProc                   = gdi32.MustFindProc("StartDocW")
 	startPageProc                  = gdi32.MustFindProc("StartPage")
 	registerDeviceNotificationProc = user32.MustFindProc("RegisterDeviceNotificationW")
+	registerDeviceSignalProc       = user32.MustFindProc("RegisterDeviceSignalW")
 )
 
 // System error codes.
@@ -1241,6 +1242,29 @@ func RegisterDeviceNotification(handle windows.Handle) error {
 	notificationFilter.szName = 0
 
 	r1, _, err := registerDeviceNotificationProc.Call(uintptr(handle), uintptr(unsafe.Pointer(&notificationFilter)), DEVICE_NOTIFY_SERVICE_HANDLE|DEVICE_NOTIFY_ALL_INTERFACE_CLASSES)
+	if r1 == 0 {
+		return err
+	}
+	return nil
+}
+
+const (
+	DEVICE_SIGNAL_SERVICE_HANDLE        = 2
+	DEVICE_SIGNAL_ALL_INTERFACE_CLASSES = 3
+
+	DBT_DEVTYP_DEVICEINTERFACE 			= 5
+)
+
+func RegisterDeviceSignal(handle windows.Handle) error {
+
+	var signalFilter DevBroadcastDevinterface
+	signalFilter.szName = 0	
+	signalFilter.dwReserved = 0	
+	signalFilter.dwDeviceType = DBT_DEVTYP_DEVICEINTERFACE
+	signalFilter.classGuid = PRINTERS_DEVICE_CLASS
+	signalFilter.dwSize = uint32(unsafe.Sizeof(signalFilter))	
+
+	r1, _, err := registerDeviceSignalProc.Call(uintptr(handle), uintptr(unsafe.Pointer(&signalFilter)), DEVICE_NOTIFY_SERVICE_HANDLE|DEVICE_NOTIFY_ALL_INTERFACE_CLASSES)
 	if r1 == 0 {
 		return err
 	}
